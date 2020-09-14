@@ -213,6 +213,31 @@ namespace GbSharp.Core.CPU
 
             #endregion
 
+            #region 8bit arithmetic/logical instructions
+
+            0x04 => new Instruction("INC B", () => Increment(ref _registers.B)),
+            0x0C => new Instruction("INC C", () => Increment(ref _registers.C)),
+            0x14 => new Instruction("INC D", () => Increment(ref _registers.D)),
+            0x1C => new Instruction("INC E", () => Increment(ref _registers.E)),
+            0x24 => new Instruction("INC H", () => Increment(ref _registers.H)),
+            0x2C => new Instruction("INC L", () => Increment(ref _registers.L)),
+            0x34 => new Instruction("INC (HL)", () => IncrementAddress(_registers.HL)),
+            0x3C => new Instruction("INC A", () => Increment(ref _registers.A)),
+
+            0x05 => new Instruction("DEC B", () => 0),
+            0x0D => new Instruction("DEC C", () => 0),
+            0x15 => new Instruction("DEC D", () => 0),
+            0x1D => new Instruction("DEC E", () => 0),
+            0x25 => new Instruction("DEC H", () => 0),
+            0x2D => new Instruction("DEC L", () => 0),
+            0x35 => new Instruction("DEC (HL)", () => 0),
+            0x3D => new Instruction("DEC A", () => 0),
+            
+            0x27 => new Instruction("DAA", () => 0),
+            0x37 => new Instruction("SCF", () => 0),
+
+            #endregion
+
             // Unknown instruction
             _ => throw new UnknownInstructionException($"Unknown instruction found for: 0x{instructionByte:X}")
         };
@@ -279,8 +304,11 @@ namespace GbSharp.Core.CPU
         {
             if (shouldJump)
             {
+                var d8 = _bus.Read(_pc + 1);
+                var s8 = (d8 & 127) - (d8 & 128);
+
                 _t = 12;
-                return (ushort)(_pc + _bus.Read(_pc + 1));
+                return (ushort)(_pc + s8);
             }
 
             _t = 8;
@@ -474,14 +502,24 @@ namespace GbSharp.Core.CPU
 
         private ushort LoadFromSPnToHL()
         {
-            var n = _bus.Read(_pc + 1);
-            var result = unchecked(_sp + n);
+            var d8 = _bus.Read(_pc + 1);
+            var s8 = (d8 & 127) - (d8 & 128);
+            var result = unchecked(_sp + s8);
             var newValue = (ushort)(result & 0xFFFF);
+
+            if (s8 >= 0)
+            {
+                _registers.F.Carry = (newValue & 0xFF) + s8 > 0xFF;
+                _registers.F.HalfCarry = (s8 & 0xF) + (_sp & 0xF) > 0xF;
+            }
+            else
+            {
+                _registers.F.Carry = (newValue & 0xFF) <= (_sp & 0xFF);
+                _registers.F.HalfCarry = (newValue & 0xF) <= (_sp & 0xF);
+            }
 
             _registers.F.Zero = false;
             _registers.F.Subtract = false;
-            _registers.F.HalfCarry = (n & 0xF) + (_sp & 0xF) > 0xF; // TODO: check if behavior is correct (16-bit Half Carry check ?)
-            _registers.F.Carry = result != newValue;
 
             _registers.HL = newValue;
 
@@ -508,6 +546,38 @@ namespace GbSharp.Core.CPU
             Push(value);
             _t = 16;
             return IncPC(1);
+        }
+
+        #endregion
+
+        #region 8bit arithmetic/logical instructions
+
+        private ushort Increment(ref byte register)
+        {
+            _registers.F.Subtract = false;
+            _registers.F.HalfCarry = register == 0xF;
+
+            register++;
+
+            _registers.F.Zero = register == 0b0;
+
+            _t = 4;
+            return IncPC(1);
+        }
+
+        private ushort IncrementAddress(ushort address)
+        {
+            var value = _bus.Read(address);
+            var newValue = value++;
+
+            _registers.F.Subtract = false;
+            _registers.F.HalfCarry = value == 0xF;
+            _registers.F.Zero = newValue == 0b0;
+
+            _bus.Write(address, newValue);
+
+            _t = 12;
+            return IncPC(12);
         }
 
         #endregion
