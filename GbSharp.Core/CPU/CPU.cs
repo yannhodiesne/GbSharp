@@ -11,7 +11,7 @@ namespace GbSharp.Core.CPU
         private ushort _sp;
         private ushort _t;
 
-        private bool _interrupts = true;
+        private bool _interrupts;
         private bool _halted;
         private bool _stopped;
 
@@ -224,17 +224,37 @@ namespace GbSharp.Core.CPU
             0x34 => new Instruction("INC (HL)", () => IncrementAddress(_registers.HL)),
             0x3C => new Instruction("INC A", () => Increment(ref _registers.A)),
 
-            0x05 => new Instruction("DEC B", () => 0),
-            0x0D => new Instruction("DEC C", () => 0),
-            0x15 => new Instruction("DEC D", () => 0),
-            0x1D => new Instruction("DEC E", () => 0),
-            0x25 => new Instruction("DEC H", () => 0),
-            0x2D => new Instruction("DEC L", () => 0),
-            0x35 => new Instruction("DEC (HL)", () => 0),
-            0x3D => new Instruction("DEC A", () => 0),
+            0x05 => new Instruction("DEC B", () => Decrement(ref _registers.B)),
+            0x0D => new Instruction("DEC C", () => Decrement(ref _registers.C)),
+            0x15 => new Instruction("DEC D", () => Decrement(ref _registers.D)),
+            0x1D => new Instruction("DEC E", () => Decrement(ref _registers.E)),
+            0x25 => new Instruction("DEC H", () => Decrement(ref _registers.H)),
+            0x2D => new Instruction("DEC L", () => Decrement(ref _registers.L)),
+            0x35 => new Instruction("DEC (HL)", () => DecrementAddress(_registers.HL)),
+            0x3D => new Instruction("DEC A", () => Decrement(ref _registers.A)),
             
-            0x27 => new Instruction("DAA", () => 0),
-            0x37 => new Instruction("SCF", () => 0),
+            0x27 => new Instruction("DAA", DecimalAdjustA),
+            0x37 => new Instruction("SCF", SetCarryFlag),
+            0x2F => new Instruction("CPL", ComplementA),
+            0x3F => new Instruction("CCF", ComplementCarryFlag),
+
+            0x80 => new Instruction("ADD A,B", () => AddByteFromRegister(_registers.B)),
+            0x81 => new Instruction("ADD A,C", () => AddByteFromRegister(_registers.C)),
+            0x82 => new Instruction("ADD A,D", () => AddByteFromRegister(_registers.D)),
+            0x83 => new Instruction("ADD A,E", () => AddByteFromRegister(_registers.E)),
+            0x84 => new Instruction("ADD A,H", () => AddByteFromRegister(_registers.H)),
+            0x85 => new Instruction("ADD A,L", () => AddByteFromRegister(_registers.L)),
+            0x86 => new Instruction("ADD A,(HL)", () => AddByteFromAddress(_registers.HL)),
+            0x87 => new Instruction("ADD A,A", () => AddByteFromRegister(_registers.A)),
+
+            0x88 => new Instruction("ADC A,B", () => 0),
+            0x89 => new Instruction("ADC A,C", () => 0),
+            0x8A => new Instruction("ADC A,D", () => 0),
+            0x8B => new Instruction("ADC A,E", () => 0),
+            0x8C => new Instruction("ADC A,H", () => 0),
+            0x8D => new Instruction("ADC A,L", () => 0),
+            0x8E => new Instruction("ADC A,(HL)", () => 0),
+            0x8F => new Instruction("ADC A,A", () => 0),
 
             #endregion
 
@@ -504,7 +524,7 @@ namespace GbSharp.Core.CPU
         {
             var d8 = _bus.Read(_pc + 1);
             var s8 = (d8 & 127) - (d8 & 128);
-            var result = unchecked(_sp + s8);
+            var result = _sp + s8;
             var newValue = (ushort)(result & 0xFFFF);
 
             if (s8 >= 0)
@@ -555,7 +575,7 @@ namespace GbSharp.Core.CPU
         private ushort Increment(ref byte register)
         {
             _registers.F.Subtract = false;
-            _registers.F.HalfCarry = register == 0xF;
+            _registers.F.HalfCarry = (register & 0xF) == 0xF;
 
             register++;
 
@@ -571,30 +591,126 @@ namespace GbSharp.Core.CPU
             var newValue = value++;
 
             _registers.F.Subtract = false;
-            _registers.F.HalfCarry = value == 0xF;
+            _registers.F.HalfCarry = (value & 0xF) == 0xF;
             _registers.F.Zero = newValue == 0b0;
 
             _bus.Write(address, newValue);
 
             _t = 12;
-            return IncPC(12);
+            return IncPC(1);
         }
 
-        #endregion
-
-        #region Instructions implementations
-
-        private byte Add(byte value)
+        private ushort Decrement(ref byte register)
         {
-            var result = unchecked(_registers.A + value);
-            var newValue = (byte)(result & 0xFF);
+            _registers.F.Subtract = true;
+            _registers.F.HalfCarry = (register & 0xF) == 0b0;
 
-            _registers.F.Zero = newValue == 0;
+            register--;
+
+            _registers.F.Zero = register == 0b0;
+
+            _t = 4;
+            return IncPC(1);
+        }
+
+        private ushort DecrementAddress(ushort address)
+        {
+            var value = _bus.Read(address);
+            var newValue = value--;
+
+            _registers.F.Subtract = true;
+            _registers.F.HalfCarry = (value & 0xF) == 0b0;
+            _registers.F.Zero = newValue == 0b0;
+
+            _bus.Write(address, newValue);
+
+            _t = 12;
+            return IncPC(1);
+        }
+
+        private ushort DecimalAdjustA()
+        {
+            byte u = 0;
+
+            if (_registers.F.HalfCarry || !_registers.F.Subtract && (_registers.A & 0xF) > 9)
+            {
+                u = 6;
+            }
+
+            if (_registers.F.Carry || !_registers.F.Subtract && _registers.A > 0x99)
+            {
+                u |= 0x60;
+                _registers.F.Carry = true;
+            }
+
+            _registers.A += (byte)(_registers.F.Subtract ? -u : u);
+            _registers.F.Zero = _registers.A == 0b0;
+            _registers.F.HalfCarry = false;
+
+            _t = 4;
+            return IncPC(1);
+        }
+
+        private ushort SetCarryFlag()
+        {
             _registers.F.Subtract = false;
-            _registers.F.Carry = result != newValue;
-            _registers.F.HalfCarry = (_registers.A & 0xF) + (value & 0xF) > 0xF;
+            _registers.F.HalfCarry = false;
+            _registers.F.Carry = true;
 
-            return newValue;
+            _t = 4;
+            return IncPC(1);
+        }
+
+        private ushort ComplementA()
+        {
+            _registers.F.Subtract = true;
+            _registers.F.HalfCarry = true;
+
+            _registers.A = (byte)(~_registers.A & 0xFF);
+
+            _t = 4;
+            return IncPC(1);
+        }
+
+        private ushort ComplementCarryFlag()
+        {
+            _registers.F.Subtract = false;
+            _registers.F.HalfCarry = false;
+            _registers.F.Carry = !_registers.F.Carry;
+
+            _t = 4;
+            return IncPC(1);
+        }
+
+        private ushort AddByteFromRegister(byte value)
+        {
+            var result = (byte) (unchecked(_registers.A + value) & 0xFF);
+
+            _registers.F.Zero = result == 0b0;
+            _registers.F.Subtract = false;
+            _registers.F.HalfCarry = (_registers.A & 0xF) + (value & 0xF) > 0xF; // 16bit: (_registers.A & 0xFFF) + (value & 0xFFF) > 0xFFF
+            _registers.F.Carry = _registers.A + value > 0xFF;
+
+            _registers.A = result;
+
+            _t = 4;
+            return IncPC(1);
+        }
+
+        private ushort AddByteFromAddress(ushort address)
+        {
+            var value = _bus.Read(address);
+            var result = (byte) (unchecked(_registers.A + value) & 0xFF);
+
+            _registers.F.Zero = result == 0b0;
+            _registers.F.Subtract = false;
+            _registers.F.HalfCarry = (_registers.A & 0xF) + (value & 0xF) > 0xF;
+            _registers.F.Carry = _registers.A + value > 0xFF;
+
+            _registers.A = result;
+
+            _t = 8;
+            return IncPC(1);
         }
 
         #endregion
@@ -610,26 +726,17 @@ namespace GbSharp.Core.CPU
             #endif
         }
 
-        private ushort DecSP(byte value)
-        {
-            #if DEBUG
-            return checked((ushort)(_sp + value));
-            #else
-            return (ushort)(_sp + value);
-            #endif
-        }
-
-        private ushort IncSP(byte value)
-        {
-            #if DEBUG
-            return checked((ushort)(_sp - value));
-            #else
-            return (ushort)(_sp - value);
-            #endif
-        }
-
         private void Push(ushort value)
         {
+            ushort IncSP(byte value)
+            {
+                #if DEBUG
+                return checked((ushort)(_sp - value));
+                #else
+                return (ushort)(_sp - value);
+                #endif
+            }
+
             _sp = IncSP(1);
             _bus.Write(_sp, (byte)((value & 0xFF00) >> 8));
 
@@ -639,6 +746,15 @@ namespace GbSharp.Core.CPU
 
         private ushort Pop()
         {
+            ushort DecSP(byte value)
+            {
+                #if DEBUG
+                return checked((ushort)(_sp + value));
+                #else
+                return (ushort)(_sp + value);
+                #endif
+            }
+
             var leastByte = (ushort)_bus.Read(_sp);
             _sp = DecSP(1);
 
