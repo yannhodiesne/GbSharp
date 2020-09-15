@@ -60,7 +60,7 @@ namespace GbSharp.Core.CPU
             0x28 => new Instruction("JR Z,r8", () => RelativeJump(_registers.F.Zero)),
             0x30 => new Instruction("JR NC,r8", () => RelativeJump(!_registers.F.Carry)),
             0x38 => new Instruction("JR C,r8", () => RelativeJump(_registers.F.Carry)),
-            
+
             0xC2 => new Instruction("JP NZ,a16", () => Jump(!_registers.F.Zero)),
             0xC3 => new Instruction("JP a16", () => Jump()),
             0xCA => new Instruction("JP Z,a16", () => Jump(_registers.F.Zero)),
@@ -206,7 +206,7 @@ namespace GbSharp.Core.CPU
             0xE5 => new Instruction("PUSH HL", () => PushFromRegister(_registers.HL)),
             0xF1 => new Instruction("POP AF", () => PopToRegister(value => _registers.AF = value)),
             0xF5 => new Instruction("PUSH AF", () => PushFromRegister(_registers.AF)),
-            
+
             0x08 => new Instruction("LD (a16),SP", LoadFromSPToAddress),
             0xF8 => new Instruction("LD HL,SP+r8", LoadFromSPnToHL),
             0xF9 => new Instruction("LD SP,HL", LoadFromHLToSP),
@@ -232,7 +232,7 @@ namespace GbSharp.Core.CPU
             0x2D => new Instruction("DEC L", () => Decrement(ref _registers.L)),
             0x35 => new Instruction("DEC (HL)", () => DecrementAddress(_registers.HL)),
             0x3D => new Instruction("DEC A", () => Decrement(ref _registers.A)),
-            
+
             0x27 => new Instruction("DAA", DecimalAdjustA),
             0x37 => new Instruction("SCF", SetCarryFlag),
             0x2F => new Instruction("CPL", ComplementA),
@@ -271,7 +271,7 @@ namespace GbSharp.Core.CPU
             0x9D => new Instruction("SBC A,L", () => SubByteWithCarry(_registers.L)),
             0x9E => new Instruction("SBC A,(HL)", () => SubByteFromAddressWithCarry(_registers.HL)),
             0x9F => new Instruction("SBC A,A", () => SubByteWithCarry(_registers.A)),
-            
+
             0xA0 => new Instruction("AND B", () => And(_registers.B)),
             0xA1 => new Instruction("AND C", () => And(_registers.C)),
             0xA2 => new Instruction("AND D", () => And(_registers.D)),
@@ -288,7 +288,7 @@ namespace GbSharp.Core.CPU
             0xAD => new Instruction("XOR L", () => Xor(_registers.L)),
             0xAE => new Instruction("XOR (HL)", () => XorFromAddress(_registers.HL)),
             0xAF => new Instruction("XOR A", () => Xor(_registers.A)),
-            
+
             0xB0 => new Instruction("OR B", () => Or(_registers.B)),
             0xB1 => new Instruction("OR C", () => Or(_registers.C)),
             0xB2 => new Instruction("OR D", () => Or(_registers.D)),
@@ -305,7 +305,7 @@ namespace GbSharp.Core.CPU
             0xBD => new Instruction("CP L", () => Compare(_registers.L)),
             0xBE => new Instruction("CP (HL)", () => CompareFromAddress(_registers.HL)),
             0xBF => new Instruction("CP A", () => Compare(_registers.A)),
-            
+
             0xC6 => new Instruction("ADD A,d8", AddFromByte),
             0xCE => new Instruction("ADC A,d8", AddFromByteWithCarry),
             0xD6 => new Instruction("SUB d8", SubFromByte),
@@ -314,7 +314,27 @@ namespace GbSharp.Core.CPU
             0xEE => new Instruction("XOR d8", XorFromByte),
             0xF6 => new Instruction("OR d8", OrFromByte),
             0xFE => new Instruction("CP d8", CompareFromByte),
-            
+
+            #endregion
+
+            #region 16bit arithmetic/logical instructions
+
+            0x03 => new Instruction("INC BC", () => IncrementWord(() => _registers.BC++)),
+            0x13 => new Instruction("INC DE", () => IncrementWord(() => _registers.DE++)),
+            0x23 => new Instruction("INC HL", () => IncrementWord(() => _registers.HL++)),
+            0x33 => new Instruction("INC SP", () => IncrementWord(ref _sp)),
+
+            0x09 => new Instruction("ADD HL,BC", () => AddWord(_registers.BC)),
+            0x19 => new Instruction("ADD HL,DE", () => AddWord(_registers.DE)),
+            0x29 => new Instruction("ADD HL,HL", () => AddWord(_registers.HL)),
+            0x39 => new Instruction("ADD HL,SP", () => AddWord(_sp)),
+            0xE8 => new Instruction("ADD SP,r8", AddToSP),
+
+            0x0B => new Instruction("DEC BC", () => DecrementWord(() => _registers.BC--)),
+            0x1B => new Instruction("DEC DE", () => DecrementWord(() => _registers.DE--)),
+            0x2B => new Instruction("DEC HL", () => DecrementWord(() => _registers.HL--)),
+            0x3B => new Instruction("DEC SP", () => DecrementWord(ref _sp)),
+
             #endregion
 
             // Unknown instruction
@@ -747,8 +767,8 @@ namespace GbSharp.Core.CPU
 
             _registers.F.Zero = result == 0b0;
             _registers.F.Subtract = false;
-            _registers.F.HalfCarry = (_registers.A & 0xF) + (value & 0xF) > 0xF; // 16bit: (_registers.A & 0xFFF) + (value & 0xFFF) > 0xFFF
-            _registers.F.Carry = _registers.A + value > 0xFF;
+            _registers.F.HalfCarry = (_registers.A & 0xF) + (value & 0xF) > 0xF;
+            _registers.F.Carry = unchecked(_registers.A + value) > 0xFF;
 
             _registers.A = result;
 
@@ -764,7 +784,7 @@ namespace GbSharp.Core.CPU
             _registers.F.Zero = result == 0b0;
             _registers.F.Subtract = false;
             _registers.F.HalfCarry = (_registers.A & 0xF) + (value & 0xF) > 0xF;
-            _registers.F.Carry = _registers.A + value > 0xFF;
+            _registers.F.Carry = unchecked(_registers.A + value) > 0xFF;
 
             _registers.A = result;
 
@@ -780,14 +800,14 @@ namespace GbSharp.Core.CPU
             _registers.F.Zero = result == 0b0;
             _registers.F.Subtract = false;
             _registers.F.HalfCarry = (_registers.A & 0xF) + (value & 0xF) > 0xF;
-            _registers.F.Carry = _registers.A + value > 0xFF;
+            _registers.F.Carry = unchecked(_registers.A + value) > 0xFF;
 
             _registers.A = result;
-            
+
             _t = 8;
             return IncPC(2);
         }
-        
+
         private ushort AddByteWithCarry(byte value)
         {
             var carry = _registers.F.Carry ? 1 : 0;
@@ -796,10 +816,10 @@ namespace GbSharp.Core.CPU
             _registers.F.Zero = result == 0b0;
             _registers.F.Subtract = false;
             _registers.F.HalfCarry = (_registers.A & 0xF) + (value & 0xF) + carry > 0xF;
-            _registers.F.Carry = _registers.A + value + carry > 0xFF;
+            _registers.F.Carry = unchecked(_registers.A + value + carry) > 0xFF;
 
             _registers.A = result;
-            
+
             _t = 4;
             return IncPC(1);
         }
@@ -813,14 +833,14 @@ namespace GbSharp.Core.CPU
             _registers.F.Zero = result == 0b0;
             _registers.F.Subtract = false;
             _registers.F.HalfCarry = (_registers.A & 0xF) + (value & 0xF) + carry > 0xF;
-            _registers.F.Carry = _registers.A + value + carry > 0xFF;
+            _registers.F.Carry = unchecked(_registers.A + value + carry) > 0xFF;
 
             _registers.A = result;
-            
+
             _t = 8;
             return IncPC(1);
         }
-        
+
         private ushort AddFromByteWithCarry()
         {
             var value = _bus.Read(_pc + 1);
@@ -830,10 +850,10 @@ namespace GbSharp.Core.CPU
             _registers.F.Zero = result == 0b0;
             _registers.F.Subtract = false;
             _registers.F.HalfCarry = (_registers.A & 0xF) + (value & 0xF) + carry > 0xF;
-            _registers.F.Carry = _registers.A + value + carry > 0xFF;
+            _registers.F.Carry = unchecked(_registers.A + value + carry) > 0xFF;
 
             _registers.A = result;
-            
+
             _t = 8;
             return IncPC(2);
         }
@@ -844,7 +864,7 @@ namespace GbSharp.Core.CPU
 
             _registers.F.Zero = result == 0b0;
             _registers.F.Subtract = true;
-            _registers.F.HalfCarry = (_registers.A & 0xF) - (value & 0xF) < 0; // 16bit: (_registers.A & 0xFFF) - (value & 0xFFF) < 0
+            _registers.F.HalfCarry = (_registers.A & 0xF) - (value & 0xF) < 0;
             _registers.F.Carry = _registers.A < value;
 
             _registers.A = result;
@@ -884,7 +904,7 @@ namespace GbSharp.Core.CPU
             _t = 8;
             return IncPC(2);
         }
-        
+
         private ushort SubByteWithCarry(byte value)
         {
             var carry = _registers.F.Carry ? 1 : 0;
@@ -896,7 +916,7 @@ namespace GbSharp.Core.CPU
             _registers.F.Carry = _registers.A < value + carry;
 
             _registers.A = result;
-            
+
             _t = 4;
             return IncPC(1);
         }
@@ -913,11 +933,11 @@ namespace GbSharp.Core.CPU
             _registers.F.Carry = _registers.A < value + carry;
 
             _registers.A = result;
-            
+
             _t = 8;
             return IncPC(1);
         }
-        
+
         private ushort SubFromByteWithCarry()
         {
             var carry = _registers.F.Carry ? 1 : 0;
@@ -930,7 +950,7 @@ namespace GbSharp.Core.CPU
             _registers.F.Carry = _registers.A < value + carry;
 
             _registers.A = result;
-            
+
             _t = 8;
             return IncPC(2);
         }
@@ -938,12 +958,12 @@ namespace GbSharp.Core.CPU
         private ushort And(byte value)
         {
             _registers.A &= value;
-            
+
             _registers.F.Zero = _registers.A == 0b0;
             _registers.F.Subtract = false;
             _registers.F.HalfCarry = true;
             _registers.F.Carry = false;
-            
+
             _t = 4;
             return IncPC(1);
         }
@@ -951,64 +971,64 @@ namespace GbSharp.Core.CPU
         private ushort AndFromAddress(ushort address)
         {
             _registers.A &= _bus.Read(address);
-            
+
             _registers.F.Zero = _registers.A == 0b0;
             _registers.F.Subtract = false;
             _registers.F.HalfCarry = true;
             _registers.F.Carry = false;
-            
+
             _t = 8;
             return IncPC(1);
         }
-        
+
         private ushort AndFromByte()
         {
             _registers.A &= _bus.Read(_pc + 1);
-            
+
             _registers.F.Zero = _registers.A == 0b0;
             _registers.F.Subtract = false;
             _registers.F.HalfCarry = true;
             _registers.F.Carry = false;
-            
+
             _t = 8;
             return IncPC(2);
         }
-        
+
         private ushort Or(byte value)
         {
             _registers.A |= value;
-            
+
             _registers.F.Zero = _registers.A == 0b0;
             _registers.F.Subtract = false;
             _registers.F.HalfCarry = false;
             _registers.F.Carry = false;
-            
+
             _t = 4;
             return IncPC(1);
         }
-        
+
         private ushort OrFromAddress(ushort address)
         {
             _registers.A |= _bus.Read(address);
-            
+
             _registers.F.Zero = _registers.A == 0b0;
             _registers.F.Subtract = false;
             _registers.F.HalfCarry = false;
             _registers.F.Carry = false;
-            
+
             _t = 8;
             return IncPC(1);
         }
-        
+
         private ushort OrFromByte()
         {
             _registers.A |= _bus.Read(_pc + 1);
-            
+
             _registers.F.Zero = _registers.A == 0b0;
             _registers.F.Subtract = false;
             _registers.F.HalfCarry = false;
             _registers.F.Carry = false;
-            
+
             _t = 8;
             return IncPC(2);
         }
@@ -1016,12 +1036,12 @@ namespace GbSharp.Core.CPU
         private ushort Xor(byte value)
         {
             _registers.A ^= value;
-            
+
             _registers.F.Zero = _registers.A == 0b0;
             _registers.F.Subtract = false;
             _registers.F.HalfCarry = false;
             _registers.F.Carry = false;
-            
+
             _t = 4;
             return IncPC(1);
         }
@@ -1029,29 +1049,29 @@ namespace GbSharp.Core.CPU
         private ushort XorFromAddress(ushort address)
         {
             _registers.A ^= _bus.Read(address);
-            
+
             _registers.F.Zero = _registers.A == 0b0;
             _registers.F.Subtract = false;
             _registers.F.HalfCarry = false;
             _registers.F.Carry = false;
-            
+
             _t = 8;
             return IncPC(1);
         }
-        
+
         private ushort XorFromByte()
         {
             _registers.A ^= _bus.Read(_pc + 1);
-            
+
             _registers.F.Zero = _registers.A == 0b0;
             _registers.F.Subtract = false;
             _registers.F.HalfCarry = false;
             _registers.F.Carry = false;
-            
+
             _t = 8;
             return IncPC(2);
         }
-        
+
         private ushort Compare(byte value)
         {
             var result = _registers.A - value;
@@ -1064,7 +1084,7 @@ namespace GbSharp.Core.CPU
             _t = 4;
             return IncPC(1);
         }
-        
+
         private ushort CompareFromAddress(ushort address)
         {
             var value = _bus.Read(address);
@@ -1077,7 +1097,7 @@ namespace GbSharp.Core.CPU
             _t = 8;
             return IncPC(1);
         }
-        
+
         private ushort CompareFromByte()
         {
             var value = _bus.Read(_pc + 1);
@@ -1090,7 +1110,66 @@ namespace GbSharp.Core.CPU
             _t = 8;
             return IncPC(2);
         }
-        
+
+        #endregion
+
+        #region 16bit arithmetic/logical instructions
+
+        private ushort IncrementWord(ref ushort register)
+        {
+            register++;
+            _t = 8;
+            return IncPC(1);
+        }
+
+        private ushort IncrementWord(Action setter)
+        {
+            _t = 8;
+            return IncPC(1);
+        }
+
+        private ushort DecrementWord(ref ushort register)
+        {
+            register--;
+            _t = 8;
+            return IncPC(1);
+        }
+
+        private ushort DecrementWord(Action setter)
+        {
+            _t = 8;
+            return IncPC(1);
+        }
+
+        private ushort AddWord(ushort value)
+        {
+            var result = (byte) (unchecked(_registers.HL + value) & 0xFFFF);
+
+            _registers.F.Subtract = false;
+            _registers.F.HalfCarry = (_registers.HL & 0xFFF) + (value & 0xFFF) > 0xFFF;
+            _registers.F.Carry = unchecked(_registers.HL + value) > 0xFFFF;
+
+            _registers.HL = result;
+
+            _t = 8;
+            return IncPC(1);
+        }
+
+        private ushort AddToSP()
+        {
+            var d8 = _bus.Read(_sp + 1);
+            var value = (d8 & 127) - (d8 & 128);
+            var result = (byte) ((_sp + value) & 0xFFFF);
+
+            _registers.F.HalfCarry = (_sp & 0xF) + (value & 0xF) > 0xF;
+            _registers.F.Carry = unchecked(_registers.HL + value) > 0xFF; // TODO: check if calculated properly
+
+            _sp = result;
+
+            _t = 16;
+            return IncPC(2);
+        }
+
         #endregion
 
         #region Pointers
