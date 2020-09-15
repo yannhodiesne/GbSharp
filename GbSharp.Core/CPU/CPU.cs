@@ -238,24 +238,83 @@ namespace GbSharp.Core.CPU
             0x2F => new Instruction("CPL", ComplementA),
             0x3F => new Instruction("CCF", ComplementCarryFlag),
 
-            0x80 => new Instruction("ADD A,B", () => AddByteFromRegister(_registers.B)),
-            0x81 => new Instruction("ADD A,C", () => AddByteFromRegister(_registers.C)),
-            0x82 => new Instruction("ADD A,D", () => AddByteFromRegister(_registers.D)),
-            0x83 => new Instruction("ADD A,E", () => AddByteFromRegister(_registers.E)),
-            0x84 => new Instruction("ADD A,H", () => AddByteFromRegister(_registers.H)),
-            0x85 => new Instruction("ADD A,L", () => AddByteFromRegister(_registers.L)),
+            0x80 => new Instruction("ADD A,B", () => AddByte(_registers.B)),
+            0x81 => new Instruction("ADD A,C", () => AddByte(_registers.C)),
+            0x82 => new Instruction("ADD A,D", () => AddByte(_registers.D)),
+            0x83 => new Instruction("ADD A,E", () => AddByte(_registers.E)),
+            0x84 => new Instruction("ADD A,H", () => AddByte(_registers.H)),
+            0x85 => new Instruction("ADD A,L", () => AddByte(_registers.L)),
             0x86 => new Instruction("ADD A,(HL)", () => AddByteFromAddress(_registers.HL)),
-            0x87 => new Instruction("ADD A,A", () => AddByteFromRegister(_registers.A)),
+            0x87 => new Instruction("ADD A,A", () => AddByte(_registers.A)),
+            0x88 => new Instruction("ADC A,B", () => AddByteWithCarry(_registers.B)),
+            0x89 => new Instruction("ADC A,C", () => AddByteWithCarry(_registers.C)),
+            0x8A => new Instruction("ADC A,D", () => AddByteWithCarry(_registers.D)),
+            0x8B => new Instruction("ADC A,E", () => AddByteWithCarry(_registers.E)),
+            0x8C => new Instruction("ADC A,H", () => AddByteWithCarry(_registers.H)),
+            0x8D => new Instruction("ADC A,L", () => AddByteWithCarry(_registers.L)),
+            0x8E => new Instruction("ADC A,(HL)", () => AddByteFromAddressWithCarry(_registers.HL)),
+            0x8F => new Instruction("ADC A,A", () => AddByteWithCarry(_registers.A)),
 
-            0x88 => new Instruction("ADC A,B", () => 0),
-            0x89 => new Instruction("ADC A,C", () => 0),
-            0x8A => new Instruction("ADC A,D", () => 0),
-            0x8B => new Instruction("ADC A,E", () => 0),
-            0x8C => new Instruction("ADC A,H", () => 0),
-            0x8D => new Instruction("ADC A,L", () => 0),
-            0x8E => new Instruction("ADC A,(HL)", () => 0),
-            0x8F => new Instruction("ADC A,A", () => 0),
-
+            0x90 => new Instruction("SUB B", () => SubByte(_registers.B)),
+            0x91 => new Instruction("SUB C", () => SubByte(_registers.C)),
+            0x92 => new Instruction("SUB D", () => SubByte(_registers.D)),
+            0x93 => new Instruction("SUB E", () => SubByte(_registers.E)),
+            0x94 => new Instruction("SUB H", () => SubByte(_registers.H)),
+            0x95 => new Instruction("SUB L", () => SubByte(_registers.L)),
+            0x96 => new Instruction("SUB (HL)", () => SubByteFromAddress(_registers.HL)),
+            0x97 => new Instruction("SUB A", () => SubByte(_registers.A)),
+            0x98 => new Instruction("SBC A,B", () => SubByteWithCarry(_registers.B)),
+            0x99 => new Instruction("SBC A,C", () => SubByteWithCarry(_registers.C)),
+            0x9A => new Instruction("SBC A,D", () => SubByteWithCarry(_registers.D)),
+            0x9B => new Instruction("SBC A,E", () => SubByteWithCarry(_registers.E)),
+            0x9C => new Instruction("SBC A,H", () => SubByteWithCarry(_registers.H)),
+            0x9D => new Instruction("SBC A,L", () => SubByteWithCarry(_registers.L)),
+            0x9E => new Instruction("SBC A,(HL)", () => SubByteFromAddressWithCarry(_registers.HL)),
+            0x9F => new Instruction("SBC A,A", () => SubByteWithCarry(_registers.A)),
+            
+            0xA0 => new Instruction("AND B", () => And(_registers.B)),
+            0xA1 => new Instruction("AND C", () => And(_registers.C)),
+            0xA2 => new Instruction("AND D", () => And(_registers.D)),
+            0xA3 => new Instruction("AND E", () => And(_registers.E)),
+            0xA4 => new Instruction("AND H", () => And(_registers.H)),
+            0xA5 => new Instruction("AND L", () => And(_registers.L)),
+            0xA6 => new Instruction("AND (HL)", () => AndFromAddress(_registers.HL)),
+            0xA7 => new Instruction("AND A", () => And(_registers.A)),
+            0xA8 => new Instruction("XOR B", () => Xor(_registers.B)),
+            0xA9 => new Instruction("XOR C", () => Xor(_registers.C)),
+            0xAA => new Instruction("XOR D", () => Xor(_registers.D)),
+            0xAB => new Instruction("XOR E", () => Xor(_registers.E)),
+            0xAC => new Instruction("XOR H", () => Xor(_registers.H)),
+            0xAD => new Instruction("XOR L", () => Xor(_registers.L)),
+            0xAE => new Instruction("XOR (HL)", () => XorFromAddress(_registers.HL)),
+            0xAF => new Instruction("XOR A", () => Xor(_registers.A)),
+            
+            0xB0 => new Instruction("OR B", () => Or(_registers.B)),
+            0xB1 => new Instruction("OR C", () => Or(_registers.C)),
+            0xB2 => new Instruction("OR D", () => Or(_registers.D)),
+            0xB3 => new Instruction("OR E", () => Or(_registers.E)),
+            0xB4 => new Instruction("OR H", () => Or(_registers.H)),
+            0xB5 => new Instruction("OR L", () => Or(_registers.L)),
+            0xB6 => new Instruction("OR (HL)", () => OrFromAddress(_registers.HL)),
+            0xB7 => new Instruction("OR A", () => Or(_registers.A)),
+            0xB8 => new Instruction("CP B", () => Compare(_registers.B)),
+            0xB9 => new Instruction("CP C", () => Compare(_registers.C)),
+            0xBA => new Instruction("CP D", () => Compare(_registers.D)),
+            0xBB => new Instruction("CP E", () => Compare(_registers.E)),
+            0xBC => new Instruction("CP H", () => Compare(_registers.H)),
+            0xBD => new Instruction("CP L", () => Compare(_registers.L)),
+            0xBE => new Instruction("CP (HL)", () => CompareFromAddress(_registers.HL)),
+            0xBF => new Instruction("CP A", () => Compare(_registers.A)),
+            
+            0xC6 => new Instruction("ADD A,d8", AddFromByte),
+            0xCE => new Instruction("ADC A,d8", AddFromByteWithCarry),
+            0xD6 => new Instruction("SUB d8", SubFromByte),
+            0xDE => new Instruction("SBC A,d8", SubFromByteWithCarry),
+            0xE6 => new Instruction("AND d8", AndFromByte),
+            0xEE => new Instruction("XOR d8", XorFromByte),
+            0xF6 => new Instruction("OR d8", OrFromByte),
+            0xFE => new Instruction("CP d8", CompareFromByte),
+            
             #endregion
 
             // Unknown instruction
@@ -682,7 +741,7 @@ namespace GbSharp.Core.CPU
             return IncPC(1);
         }
 
-        private ushort AddByteFromRegister(byte value)
+        private ushort AddByte(byte value)
         {
             var result = (byte) (unchecked(_registers.A + value) & 0xFF);
 
@@ -713,6 +772,325 @@ namespace GbSharp.Core.CPU
             return IncPC(1);
         }
 
+        private ushort AddFromByte()
+        {
+            var value = _bus.Read(_pc + 1);
+            var result = (byte) (unchecked(_registers.A + value) & 0xFF);
+
+            _registers.F.Zero = result == 0b0;
+            _registers.F.Subtract = false;
+            _registers.F.HalfCarry = (_registers.A & 0xF) + (value & 0xF) > 0xF;
+            _registers.F.Carry = _registers.A + value > 0xFF;
+
+            _registers.A = result;
+            
+            _t = 8;
+            return IncPC(2);
+        }
+        
+        private ushort AddByteWithCarry(byte value)
+        {
+            var carry = _registers.F.Carry ? 1 : 0;
+            var result = (byte) (unchecked(_registers.A + value + carry) & 0xFF);
+
+            _registers.F.Zero = result == 0b0;
+            _registers.F.Subtract = false;
+            _registers.F.HalfCarry = (_registers.A & 0xF) + (value & 0xF) + carry > 0xF;
+            _registers.F.Carry = _registers.A + value + carry > 0xFF;
+
+            _registers.A = result;
+            
+            _t = 4;
+            return IncPC(1);
+        }
+
+        private ushort AddByteFromAddressWithCarry(ushort address)
+        {
+            var carry = _registers.F.Carry ? 1 : 0;
+            var value = _bus.Read(address);
+            var result = (byte) (unchecked(_registers.A + value + carry) & 0xFF);
+
+            _registers.F.Zero = result == 0b0;
+            _registers.F.Subtract = false;
+            _registers.F.HalfCarry = (_registers.A & 0xF) + (value & 0xF) + carry > 0xF;
+            _registers.F.Carry = _registers.A + value + carry > 0xFF;
+
+            _registers.A = result;
+            
+            _t = 8;
+            return IncPC(1);
+        }
+        
+        private ushort AddFromByteWithCarry()
+        {
+            var value = _bus.Read(_pc + 1);
+            var carry = _registers.F.Carry ? 1 : 0;
+            var result = (byte) (unchecked(_registers.A + value + carry) & 0xFF);
+
+            _registers.F.Zero = result == 0b0;
+            _registers.F.Subtract = false;
+            _registers.F.HalfCarry = (_registers.A & 0xF) + (value & 0xF) + carry > 0xF;
+            _registers.F.Carry = _registers.A + value + carry > 0xFF;
+
+            _registers.A = result;
+            
+            _t = 8;
+            return IncPC(2);
+        }
+
+        private ushort SubByte(byte value)
+        {
+            var result = (byte) (unchecked(_registers.A - value) & 0xFF);
+
+            _registers.F.Zero = result == 0b0;
+            _registers.F.Subtract = true;
+            _registers.F.HalfCarry = (_registers.A & 0xF) - (value & 0xF) < 0; // 16bit: (_registers.A & 0xFFF) - (value & 0xFFF) < 0
+            _registers.F.Carry = _registers.A < value;
+
+            _registers.A = result;
+
+            _t = 4;
+            return IncPC(1);
+        }
+
+        private ushort SubByteFromAddress(ushort address)
+        {
+            var value = _bus.Read(address);
+            var result = (byte) (unchecked(_registers.A - value) & 0xFF);
+
+            _registers.F.Zero = result == 0b0;
+            _registers.F.Subtract = true;
+            _registers.F.HalfCarry = (_registers.A & 0xF) - (value & 0xF) < 0;
+            _registers.F.Carry = _registers.A < value;
+
+            _registers.A = result;
+
+            _t = 8;
+            return IncPC(1);
+        }
+
+        private ushort SubFromByte()
+        {
+            var value = _bus.Read(_pc + 1);
+            var result = (byte) (unchecked(_registers.A - value) & 0xFF);
+
+            _registers.F.Zero = result == 0b0;
+            _registers.F.Subtract = true;
+            _registers.F.HalfCarry = (_registers.A & 0xF) - (value & 0xF) < 0;
+            _registers.F.Carry = _registers.A < value;
+
+            _registers.A = result;
+
+            _t = 8;
+            return IncPC(2);
+        }
+        
+        private ushort SubByteWithCarry(byte value)
+        {
+            var carry = _registers.F.Carry ? 1 : 0;
+            var result = (byte) (unchecked(_registers.A - value - carry) & 0xFF);
+
+            _registers.F.Zero = result == 0b0;
+            _registers.F.Subtract = false;
+            _registers.F.HalfCarry = (_registers.A & 0xF) - (value & 0xF) - carry < 0;
+            _registers.F.Carry = _registers.A < value + carry;
+
+            _registers.A = result;
+            
+            _t = 4;
+            return IncPC(1);
+        }
+
+        private ushort SubByteFromAddressWithCarry(ushort address)
+        {
+            var carry = _registers.F.Carry ? 1 : 0;
+            var value = _bus.Read(address);
+            var result = (byte) (unchecked(_registers.A - value - carry) & 0xFF);
+
+            _registers.F.Zero = result == 0b0;
+            _registers.F.Subtract = false;
+            _registers.F.HalfCarry = (_registers.A & 0xF) - (value & 0xF) - carry < 0;
+            _registers.F.Carry = _registers.A < value + carry;
+
+            _registers.A = result;
+            
+            _t = 8;
+            return IncPC(1);
+        }
+        
+        private ushort SubFromByteWithCarry()
+        {
+            var carry = _registers.F.Carry ? 1 : 0;
+            var value = _bus.Read(_pc + 1);
+            var result = (byte) (unchecked(_registers.A - value - carry) & 0xFF);
+
+            _registers.F.Zero = result == 0b0;
+            _registers.F.Subtract = false;
+            _registers.F.HalfCarry = (_registers.A & 0xF) - (value & 0xF) - carry < 0;
+            _registers.F.Carry = _registers.A < value + carry;
+
+            _registers.A = result;
+            
+            _t = 8;
+            return IncPC(2);
+        }
+
+        private ushort And(byte value)
+        {
+            _registers.A &= value;
+            
+            _registers.F.Zero = _registers.A == 0b0;
+            _registers.F.Subtract = false;
+            _registers.F.HalfCarry = true;
+            _registers.F.Carry = false;
+            
+            _t = 4;
+            return IncPC(1);
+        }
+
+        private ushort AndFromAddress(ushort address)
+        {
+            _registers.A &= _bus.Read(address);
+            
+            _registers.F.Zero = _registers.A == 0b0;
+            _registers.F.Subtract = false;
+            _registers.F.HalfCarry = true;
+            _registers.F.Carry = false;
+            
+            _t = 8;
+            return IncPC(1);
+        }
+        
+        private ushort AndFromByte()
+        {
+            _registers.A &= _bus.Read(_pc + 1);
+            
+            _registers.F.Zero = _registers.A == 0b0;
+            _registers.F.Subtract = false;
+            _registers.F.HalfCarry = true;
+            _registers.F.Carry = false;
+            
+            _t = 8;
+            return IncPC(2);
+        }
+        
+        private ushort Or(byte value)
+        {
+            _registers.A |= value;
+            
+            _registers.F.Zero = _registers.A == 0b0;
+            _registers.F.Subtract = false;
+            _registers.F.HalfCarry = false;
+            _registers.F.Carry = false;
+            
+            _t = 4;
+            return IncPC(1);
+        }
+        
+        private ushort OrFromAddress(ushort address)
+        {
+            _registers.A |= _bus.Read(address);
+            
+            _registers.F.Zero = _registers.A == 0b0;
+            _registers.F.Subtract = false;
+            _registers.F.HalfCarry = false;
+            _registers.F.Carry = false;
+            
+            _t = 8;
+            return IncPC(1);
+        }
+        
+        private ushort OrFromByte()
+        {
+            _registers.A |= _bus.Read(_pc + 1);
+            
+            _registers.F.Zero = _registers.A == 0b0;
+            _registers.F.Subtract = false;
+            _registers.F.HalfCarry = false;
+            _registers.F.Carry = false;
+            
+            _t = 8;
+            return IncPC(2);
+        }
+
+        private ushort Xor(byte value)
+        {
+            _registers.A ^= value;
+            
+            _registers.F.Zero = _registers.A == 0b0;
+            _registers.F.Subtract = false;
+            _registers.F.HalfCarry = false;
+            _registers.F.Carry = false;
+            
+            _t = 4;
+            return IncPC(1);
+        }
+
+        private ushort XorFromAddress(ushort address)
+        {
+            _registers.A ^= _bus.Read(address);
+            
+            _registers.F.Zero = _registers.A == 0b0;
+            _registers.F.Subtract = false;
+            _registers.F.HalfCarry = false;
+            _registers.F.Carry = false;
+            
+            _t = 8;
+            return IncPC(1);
+        }
+        
+        private ushort XorFromByte()
+        {
+            _registers.A ^= _bus.Read(_pc + 1);
+            
+            _registers.F.Zero = _registers.A == 0b0;
+            _registers.F.Subtract = false;
+            _registers.F.HalfCarry = false;
+            _registers.F.Carry = false;
+            
+            _t = 8;
+            return IncPC(2);
+        }
+        
+        private ushort Compare(byte value)
+        {
+            var result = _registers.A - value;
+
+            _registers.F.Zero = _registers.A == value;
+            _registers.F.Subtract = true;
+            _registers.F.HalfCarry = (_registers.A & 0xF) - (value & 0xF) < 0;
+            _registers.F.Carry = _registers.A < value;
+
+            _t = 4;
+            return IncPC(1);
+        }
+        
+        private ushort CompareFromAddress(ushort address)
+        {
+            var value = _bus.Read(address);
+
+            _registers.F.Zero = _registers.A == value;
+            _registers.F.Subtract = true;
+            _registers.F.HalfCarry = (_registers.A & 0xF) - (value & 0xF) < 0;
+            _registers.F.Carry = _registers.A < value;
+
+            _t = 8;
+            return IncPC(1);
+        }
+        
+        private ushort CompareFromByte()
+        {
+            var value = _bus.Read(_pc + 1);
+
+            _registers.F.Zero = _registers.A == value;
+            _registers.F.Subtract = true;
+            _registers.F.HalfCarry = (_registers.A & 0xF) - (value & 0xF) < 0;
+            _registers.F.Carry = _registers.A < value;
+
+            _t = 8;
+            return IncPC(2);
+        }
+        
         #endregion
 
         #region Pointers
