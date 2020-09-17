@@ -2,7 +2,7 @@
 
 namespace GbSharp.Core.CPU
 {
-    public class Instruction
+    public readonly struct Instruction
     {
         private readonly string _operation;
         public Func<ushort> Execute { get; }
